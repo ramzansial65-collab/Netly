@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nestly - Create Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="auth.js"></script>
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+  body{background:#F4F6F8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-box{background:#fff;padding:35px 30px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);width:100%;max-width:420px;text-align:center;}
+  .login-logo{width:80px;margin-bottom:15px;}
+  .input{width:100%;padding:14px;margin-bottom:15px;border:1px solid #ddd;border-radius:10px;font-size:15px;outline:none;}
+  .input:focus{border-color:#4CAF50;}
+  .auth-error{display:none;background:#ffebee;color:#c62828;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:15px;text-align:left;border:1px solid #ef9a9a;}
+  .password-wrapper{position:relative;width:100%;}
+  .toggle-password{position:absolute;right:14px;top:15px;cursor:pointer;user-select:none;font-size:18px;}
+  .strength-meter{height:6px;width:100%;background:#e0e0e0;border-radius:4px;margin-bottom:6px;overflow:hidden;}
+  .strength-bar{height:100%;width:0%;transition:0.3s;}
+  .strength-text{font-size:12px;text-align:left;color:grey;margin-bottom:15px;}
+  .btn{background:#4CAF50;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;cursor:pointer;width:100%;font-size:15px;}
+  .btn:disabled{background:#a5d6a7;}
+  .link{color:#4CAF50;cursor:pointer;font-weight:600;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <img src="nestly_logo.png" class="login-logo" alt="Logo">
+  <h2>Create Account</h2>
+  <p style="color:grey;margin-bottom:20px;">Join Nestly Family Organizer</p>
+  
+  <div id="authError" class="auth-error"></div>
+
+  <input type="text" id="signupName" placeholder="Full Name" class="input">
+  <input type="email" id="signupEmail" placeholder="Email Address" class="input">
+  
+  <div class="password-wrapper">
+    <input type="password" id="signupPassword" placeholder="Password (Min 8 chars)" class="input" oninput="checkPasswordStrength(this.value)">
+    <span class="toggle-password" onclick="togglePassVisibility('signupPassword', this)">👁️</span>
+  </div>
+
+  <div class="strength-meter"><div id="strengthBar" class="strength-bar"></div></div>
+  <div id="strengthText" class="strength-text">Password strength: None</div>
+
+  <button class="btn" id="signupBtn" onclick="signup()">Create Account</button>
+  <p style="margin-top:20px;font-size:14px;">Already have an account? <a href="login.html" class="link">Login</a></p>
+</div>
+
+<script>
+auth.onAuthStateChanged(user => {
+  if (user) { window.location.href = "index.html"; }
+});
+
+function checkPasswordStrength(pass){
+  let bar = document.getElementById('strengthBar');
+  let txt = document.getElementById('strengthText');
+  let score = 0;
+  if(!pass){ bar.style.width = '0%'; txt.innerText = 'Password strength: None'; return; }
+  if(pass.length >= 8) score++;
+  if(pass.match(/[a-z]/) && pass.match(/[A-Z]/)) score++;
+  if(pass.match(/[0-9]/)) score++;
+  if(pass.match(/.[!,@,#,$,%,^,&,*,?,_,~,-]/)) score++;
+
+  if(score <= 1){ bar.style.width = '25%'; bar.style.backgroundColor = '#f44336'; txt.innerText = 'Strength: Weak ❌'; }
+  else if(score <= 3){ bar.style.width = '65%'; bar.style.backgroundColor = '#ff9800'; txt.innerText = 'Strength: Moderate ⚠️'; }
+  else { bar.style.width = '100%'; bar.style.backgroundColor = '#4caf50'; txt.innerText = 'Strength: Strong 💪'; }
+}
+
+function signup(){
+  let name = document.getElementById('signupName').value.trim();
+  let email = document.getElementById('signupEmail').value.trim().toLowerCase();
+  let password = document.getElementById('signupPassword').value;
+  let btn = document.getElementById('signupBtn');
+
+  clearError();
+
+  if(!name || !email || !password){ showError("Tamam fields fill karein!"); return; }
+  if(password.length < 8){ showError("Password kam se kam 8 characters ka ho!"); return; }
+
+  btn.innerText = "Creating Account...";
+  btn.disabled = true;
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(res => {
+      return db.collection('users').doc(res.user.uid).set({
+        name: name,
+        email: email,
+        wallet: 10000,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    })
+    .then(() => { window.location.href = "index.html"; })
+    .catch(err => {
+      btn.innerText = "Create Account";
+      btn.disabled = false;
+      if(err.code === 'auth/email-already-in-use'){ showError("Yeh Email pehle se registered hai!"); }
+      else showError("Error: " + err.message);
+    });
+}
+</script>
+</body>
+</html>

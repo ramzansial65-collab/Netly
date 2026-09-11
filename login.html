@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nestly - Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="auth.js"></script>
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+  body{background:#F4F6F8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-box{background:#fff;padding:35px 30px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);width:100%;max-width:420px;text-align:center;}
+  .login-logo{width:80px;margin-bottom:15px;}
+  .input{width:100%;padding:14px;margin-bottom:15px;border:1px solid #ddd;border-radius:10px;font-size:15px;outline:none;}
+  .input:focus{border-color:#4CAF50;}
+  .auth-error{display:none;background:#ffebee;color:#c62828;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:15px;text-align:left;border:1px solid #ef9a9a;}
+  .password-wrapper{position:relative;width:100%;}
+  .toggle-password{position:absolute;right:14px;top:15px;cursor:pointer;user-select:none;font-size:18px;}
+  .auth-options{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:18px;}
+  .btn{background:#4CAF50;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;cursor:pointer;width:100%;font-size:15px;}
+  .btn:disabled{background:#a5d6a7;}
+  .link{color:#4CAF50;cursor:pointer;font-weight:600;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <img src="nestly_logo.png" class="login-logo" alt="Logo">
+  <h2>Welcome Back</h2>
+  <p style="color:grey;margin-bottom:20px;">Login to your Nestly account</p>
+  
+  <div id="authError" class="auth-error"></div>
+
+  <input type="email" id="loginEmail" placeholder="Email Address" class="input">
+  
+  <div class="password-wrapper">
+    <input type="password" id="loginPassword" placeholder="Password" class="input">
+    <span class="toggle-password" onclick="togglePassVisibility('loginPassword', this)">👁️</span>
+  </div>
+
+  <div class="auth-options">
+    <label><input type="checkbox" id="rememberMe"> Remember Me</label>
+    <span class="link" onclick="forgotPassword()">Forgot Password?</span>
+  </div>
+
+  <button class="btn" id="loginBtn" onclick="login()">Login</button>
+  <p style="margin-top:20px;font-size:14px;">Don't have an account? <a href="signup.html" class="link">Sign Up</a></p>
+</div>
+
+<script>
+auth.onAuthStateChanged(user => {
+  if (user) { window.location.href = "index.html"; }
+});
+
+function login(){
+  let email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  let password = document.getElementById('loginPassword').value;
+  let rememberMe = document.getElementById('rememberMe').checked;
+  let btn = document.getElementById('loginBtn');
+
+  clearError();
+
+  if(!email || !password){ showError('Email aur password dono enter karein!'); return; }
+
+  btn.innerText = "Logging in...";
+  btn.disabled = true;
+
+  let persistence = rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+
+  auth.setPersistence(persistence)
+    .then(() => auth.signInWithEmailAndPassword(email, password))
+    .catch(err => {
+      btn.innerText = "Login";
+      btn.disabled = false;
+      if(err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password'){
+        showError('Galat Email ya Password!');
+      } else {
+        showError("Error: " + err.message);
+      }
+    });
+}
+
+function forgotPassword(){
+  let email = prompt("Password reset link ke liye Email enter krein:");
+  if(email){
+    auth.sendPasswordResetEmail(email.trim().toLowerCase())
+      .then(() => alert("Reset link sent!"))
+      .catch(err => alert("Error: " + err.message));
+  }
+}
+</script>
+</body>
+</html>
